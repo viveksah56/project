@@ -24,7 +24,7 @@ class BlogController {
 
   async getBlogsByAuthor(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const result = await blogService.getBlogsByAuthor(req.params.authorId, req.query);
+      const result = await blogService.getBlogsByAuthor(req.params.authorId as string, req.query);
       res.status(200).json({ success: true, ...result });
     } catch (error) {
       next(error);
@@ -43,7 +43,7 @@ class BlogController {
 
   async getBlogBySlug(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const blog = await blogService.getBlogBySlug(req.params.slug);
+      const blog = await blogService.getBlogBySlug(req.params.slug as string);
       res.status(200).json({ success: true, data: blog });
     } catch (error) {
       next(error);
@@ -52,7 +52,7 @@ class BlogController {
 
   async getBlogById(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const blog = await blogService.getBlogById(req.params.id);
+      const blog = await blogService.getBlogById(req.params.id as string);
       res.status(200).json({ success: true, data: blog });
     } catch (error) {
       next(error);
@@ -62,7 +62,7 @@ class BlogController {
   async updateBlog(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw new ApiError("Unauthorized", 401);
-      const blog = await blogService.updateBlog(req.params.id, req.user._id, req.body);
+      const blog = await blogService.updateBlog(req.params.id as string, req.user._id, req.body);
       res.status(200).json({ success: true, message: "Blog updated successfully", data: blog });
     } catch (error) {
       next(error);
@@ -72,7 +72,7 @@ class BlogController {
   async deleteBlog(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.user) throw new ApiError("Unauthorized", 401);
-      await blogService.deleteBlog(req.params.id, req.user._id);
+      await blogService.deleteBlog(req.params.id as string, req.user._id);
       res.status(200).json({ success: true, message: "Blog deleted successfully", data: null });
     } catch (error) {
       next(error);
