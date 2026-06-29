@@ -23,6 +23,7 @@
     "@types/morgan": "^1.9.10",
     "@types/node": "^26.0.1",
     "@types/nodemailer": "^8.0.1",
+    "@types/socket.io": "^3.0.1",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "^10.1.8",
     "nodemon": "^3.1.14",
@@ -45,6 +46,7 @@
     "morgan": "^1.11.0",
     "nodemailer": "^9.0.1",
     "otplib": "^13.4.1",
+    "socket.io": "^4.8.3",
     "zod": "^4.4.3"
   },
   "allowScripts": {
