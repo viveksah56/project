@@ -45,8 +45,15 @@ const generateTokens = (userId: string): IAuthTokens => {
 const saveOtp = async (email: string, otp: string): Promise<void> => {
   const hashedOtp = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
-  await Otp.deleteMany({ email });
-  await Otp.create({ email, otp: hashedOtp, expiresAt });
+  const session = await Otp.startSession();
+  try {
+    await session.withTransaction(async () => {
+      await Otp.deleteMany({ email }).session(session);
+      await Otp.create([{ email, otp: hashedOtp, expiresAt }], { session });
+    });
+  } finally {
+    await session.endSession();
+  }
 };
 
 const validateOtp = async (email: string, otp: string): Promise<void> => {
@@ -71,6 +78,7 @@ const validateOtp = async (email: string, otp: string): Promise<void> => {
 
 class AuthService {
   async loginWithGoogle(idToken: string): Promise<IAuthResult> {
+    console.log("idToken", idToken);
     const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: env.GOOGLE_CLIENT_ID,
@@ -105,6 +113,7 @@ class AuthService {
       await User.findByIdAndUpdate(user._id, { isVerified: true });
       user.isVerified = true;
     }
+    console.log("user", user);
 
     return { user, tokens: generateTokens(String(user._id)) };
   }
@@ -113,7 +122,7 @@ class AuthService {
     const user = await User.findOne({ email: input.email }).select("+password");
 
     if (!user) {
-      throw new ApiError("Invalid email or password", 401);
+      throw new ApiError("Invalid email or password", 422);
     }
 
     if (!user.isVerified) {

@@ -11,6 +11,20 @@ class AuthController {
     }
   }
 
+  async loginWithGoogle(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { idToken } = req.body;
+      if (!idToken) {
+        res.status(400).json({ success: false, message: "Google ID token is required" });
+        return;
+      }
+      const result = await authService.loginWithGoogle(idToken);
+      res.status(200).json({ success: true, message: "Google login successful", ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async verifyEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const result = await authService.verifyEmail(req.body);
@@ -23,12 +37,10 @@ class AuthController {
   async verifyEmailFromLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email, otp } = req.query as { email: string; otp: string };
-
       if (!email || !otp) {
         res.status(400).json({ success: false, message: "Email and OTP are required" });
         return;
       }
-
       const result = await authService.verifyEmail({ email, otp });
       res.status(200).json({ success: true, ...result });
     } catch (error) {
@@ -48,12 +60,10 @@ class AuthController {
   async resendOtpFromLink(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { email } = req.query as { email: string };
-
       if (!email) {
         res.status(400).json({ success: false, message: "Email is required" });
         return;
       }
-
       const result = await authService.resendOtp({ email });
       res.status(200).json({ success: true, ...result });
     } catch (error) {

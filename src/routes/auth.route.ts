@@ -13,6 +13,7 @@ import {
 const authRoutes = Router();
 
 authRoutes.post("/login", validate(loginSchema), authController.login.bind(authController));
+authRoutes.post("/google", authController.loginWithGoogle.bind(authController));
 authRoutes.post("/verify-email", validate(verifyEmailSchema), authController.verifyEmail.bind(authController));
 authRoutes.get("/verify-email", authController.verifyEmailFromLink.bind(authController));
 authRoutes.post("/resend-otp", validate(resendOtpSchema), authController.resendOtp.bind(authController));
