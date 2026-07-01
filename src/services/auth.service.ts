@@ -23,7 +23,7 @@ export interface IAuthTokens {
 }
 
 export interface IAuthResult {
-  user: IUser;
+  role: string;
   tokens: IAuthTokens;
 }
 
@@ -45,15 +45,8 @@ const generateTokens = (userId: string): IAuthTokens => {
 const saveOtp = async (email: string, otp: string): Promise<void> => {
   const hashedOtp = await bcrypt.hash(otp, 10);
   const expiresAt = new Date(Date.now() + OTP_EXPIRY_MS);
-  const session = await Otp.startSession();
-  try {
-    await session.withTransaction(async () => {
-      await Otp.deleteMany({ email }).session(session);
-      await Otp.create([{ email, otp: hashedOtp, expiresAt }], { session });
-    });
-  } finally {
-    await session.endSession();
-  }
+  await Otp.deleteMany({ email });
+  await Otp.create({ email, otp: hashedOtp, expiresAt });
 };
 
 const validateOtp = async (email: string, otp: string): Promise<void> => {
@@ -78,7 +71,6 @@ const validateOtp = async (email: string, otp: string): Promise<void> => {
 
 class AuthService {
   async loginWithGoogle(idToken: string): Promise<IAuthResult> {
-    console.log("idToken", idToken);
     const ticket = await googleClient.verifyIdToken({
       idToken,
       audience: env.GOOGLE_CLIENT_ID,
@@ -113,16 +105,15 @@ class AuthService {
       await User.findByIdAndUpdate(user._id, { isVerified: true });
       user.isVerified = true;
     }
-    console.log("user", user);
 
-    return { user, tokens: generateTokens(String(user._id)) };
+    return { role: user.role, tokens: generateTokens(String(user._id)) };
   }
 
   async login(input: ILoginInput): Promise<IAuthResult> {
     const user = await User.findOne({ email: input.email }).select("+password");
 
     if (!user) {
-      throw new ApiError("Invalid email or password", 422);
+      throw new ApiError("Invalid email or password", 401);
     }
 
     if (!user.isVerified) {
@@ -134,7 +125,15 @@ class AuthService {
       throw new ApiError("Invalid email or password", 401);
     }
 
-    return { user, tokens: generateTokens(String(user._id)) };
+    return { role: user.role, tokens: generateTokens(String(user._id)) };
+  }
+
+  async getLoggedUser(userId: string): Promise<IUser> {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new ApiError("User not found", 404);
+    }
+    return user;
   }
 
   async verifyEmail(input: IVerifyEmailInput): Promise<{ message: string }> {
@@ -201,7 +200,7 @@ class AuthService {
     return { message: "Password reset successfully" };
   }
 
-  async refreshToken(input: IRefreshTokenInput): Promise<IAuthTokens> {
+  async refreshToken(input: IRefreshTokenInput): Promise<IAuthResult> {
     let decoded: { id: string };
 
     try {
@@ -215,7 +214,7 @@ class AuthService {
       throw new ApiError("User not found", 404);
     }
 
-    return generateTokens(String(user._id));
+    return { role: user.role, tokens: generateTokens(String(user._id)) };
   }
 }
 
